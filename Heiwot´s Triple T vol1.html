@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Heiwot's Triple T</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300;1,600&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5ece9;
+    --surface: #ffffff;
+    --border: #e2c8c0;
+    --accent: #8b0000;
+    --accent2: #b03a2e;
+    --text: #2c0d0d;
+    --muted: #a07070;
+    --grid-gap: 6px;
+    --cell-size: 180px;
+  }
+  body.dark {
+    --bg: #1a0a0a;
+    --surface: #2c1010;
+    --border: #4a1a1a;
+    --accent: #c0392b;
+    --accent2: #8b0000;
+    --text: #f5ece9;
+    --muted: #885555;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.4s, color 0.4s;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 999; opacity: 0.4;
+  }
+
+  /* ── THEME TOGGLE ── */
+  .theme-toggle {
+    position: fixed; top: 18px; right: 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50px; padding: 8px 14px;
+    font-size: 1.1rem; cursor: pointer; z-index: 200;
+    transition: background 0.3s, border-color 0.3s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+
+  /* ── BACK BTN ── */
+  .back-btn {
+    position: fixed; top: 18px; left: 18px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 50px; padding: 8px 18px;
+    font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+    font-family: 'DM Sans', sans-serif; font-weight: 600;
+    cursor: pointer; z-index: 200; color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .back-btn:hover { border-color: var(--accent); }
+
+  /* ── TITLE ── */
+  .title-wrap { text-align: center; margin-bottom: 6px; }
+  .title-top {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-weight: 300;
+    font-size: clamp(1rem, 3.5vw, 1.3rem);
+    letter-spacing: 0.45em; color: var(--accent);
+    opacity: 0.75; text-transform: uppercase;
+    display: block; margin-bottom: -4px;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600; font-style: normal;
+    font-size: clamp(3.2rem, 11vw, 5.8rem);
+    letter-spacing: 0.08em; line-height: 0.92;
+    background: linear-gradient(175deg, #c0392b 0%, #8b0000 50%, #3d0000 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 12px rgba(139,0,0,0.25));
+    margin-bottom: 0;
+  }
+  .title-t {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-weight: 300;
+    font-size: clamp(1.4rem, 4.5vw, 1.9rem);
+    letter-spacing: 0.6em; color: var(--accent);
+    opacity: 0.6; display: block; margin-top: 2px;
+  }
+  .title-rule {
+    display: flex; align-items: center; gap: 10px;
+    margin: 10px auto 0; width: fit-content;
+  }
+  .title-rule::before, .title-rule::after {
+    content: ''; display: block; width: 50px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent));
+  }
+  .title-rule::after { background: linear-gradient(90deg, var(--accent), transparent); }
+  .title-rule span {
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 0.75rem; color: var(--accent); opacity: 0.6;
+    letter-spacing: 0.25em; text-transform: uppercase;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 36px 16px 60px;
+    animation: fadeIn 0.35s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ══════════ INICIO ══════════ */
+  #screen-home { justify-content: center; gap: 0; }
+  .home-title-wrap { margin-bottom: 44px; }
+
+  .menu-list {
+    display: flex; flex-direction: column;
+    gap: 12px; width: 100%; max-width: 360px;
+  }
+  .menu-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 22px 26px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 20px;
+    transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+    text-align: left;
+    position: relative; overflow: hidden;
+  }
+  .menu-item::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; background: var(--accent);
+    transform: scaleY(0); transform-origin: bottom;
+    transition: transform 0.25s ease;
+    border-radius: 0 2px 2px 0;
+  }
+  .menu-item:hover { border-color: var(--accent); transform: translateX(6px); }
+  .menu-item:hover::before { transform: scaleY(1); }
+
+  .menu-icon { font-size: 1.9rem; flex-shrink: 0; width: 44px; text-align: center; }
+  .menu-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--text); display: block; line-height: 1.1;
+  }
+  .menu-sub { font-size: 0.71rem; color: var(--muted); letter-spacing: 0.06em; margin-top: 3px; display: block; }
+
+  .home-footer {
+    margin-top: 44px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic; font-size: 0.82rem;
+    color: var(--muted); letter-spacing: 0.15em; opacity: 0.7;
+  }
+
+  /* ══════════ JUEGO ══════════ */
+  .game-title-wrap { margin-bottom: 20px; }
+  .scores {
+    display: flex; gap: 12px; margin-bottom: 18px;
+    width: 100%; max-width: 580px;
+  }
+  .score-box {
+    flex: 1; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px 10px; text-align: center; transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .score-box.active-x { border-color: var(--accent); box-shadow: 0 0 14px rgba(139,0,0,0.2); }
+  .score-box.active-o { border-color: var(--accent2); box-shadow: 0 0 14px rgba(176,58,46,0.2); }
+  .score-label { font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .score-num { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 2.2rem; line-height: 1; }
+  .score-box:nth-child(1) .score-num { color: var(--accent); }
+  .score-box:nth-child(3) .score-num { color: var(--accent2); }
+
+  #status { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.06em; margin-bottom: 16px; height: 22px; }
+
+  .board-wrap { position: relative; margin-bottom: 20px; }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, var(--cell-size));
+    grid-template-rows: repeat(3, var(--cell-size));
+    gap: var(--grid-gap); border-radius: 18px; overflow: hidden; position: relative;
+  }
+  #bg-photo {
+    position: absolute; inset: 0; background-size: cover;
+    background-position: center; border-radius: 18px;
+    opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 0;
+  }
+  #bg-photo.visible { opacity: 1; }
+
+  .cell {
+    position: relative; z-index: 1;
+    width: var(--cell-size); height: var(--cell-size);
+    background: rgba(255,255,255,0);
+    border: 1px solid rgba(139,0,0,0.15);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-family: 'Cormorant Garamond', serif; font-size: 5rem; font-weight: 600;
+    transition: background 0.2s, transform 0.15s;
+    user-select: none; overflow: hidden;
+  }
+  .cell:hover:not(.taken) { background: rgba(139,0,0,0.07); transform: scale(1.04); z-index: 2; }
+  body.dark .cell:hover:not(.taken) { background: rgba(192,57,43,0.12); }
+  .cell.x { color: var(--accent); text-shadow: 0 0 18px rgba(139,0,0,0.5); }
+  .cell.o { color: var(--accent2); text-shadow: 0 0 18px rgba(176,58,46,0.5); }
+  .cell.win { background: rgba(139,0,0,0.1); animation: winPulse 0.5s ease forwards; }
+  .cell.x.win { border-color: var(--accent); }
+  .cell.o.win { border-color: var(--accent2); }
+  @keyframes winPulse { 0%{transform:scale(1)} 40%{transform:scale(1.1)} 100%{transform:scale(1.04)} }
+
+  .cell-photo { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 0.4s; z-index: 0; }
+  .cell-photo.vis { opacity: 1; }
+  .cell-symbol { position: relative; z-index: 1; line-height: 1; }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; gap: 10px; width: 100%; max-width: 580px; margin-bottom: 8px; }
+  .btn {
+    flex: 1; padding: 13px;
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn:hover { background: #f5ece9; border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.88; }
+  body.dark .btn { background: #2c1010; color: #f5ece9; }
+  body.dark .btn:hover { background: #1a0a0a; border-color: var(--accent); }
+
+  /* ══════════ FOTOS ══════════ */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 22px;
+    width: 100%; max-width: 460px; margin-bottom: 20px;
+  }
+  .panel-title {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    letter-spacing: 0.08em; font-size: 1.15rem; color: var(--text); margin-bottom: 16px;
+  }
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+  .tab {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 10px; padding: 9px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    font-weight: 600; letter-spacing: 0.05em; cursor: pointer;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 28px 16px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s; position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag-active { border-color: var(--accent); background: rgba(139,0,0,0.04); }
+  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-text { font-size: 0.8rem; color: var(--muted); }
+
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .slider-row label { font-size: 0.72rem; color: var(--muted); width: 60px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--accent); height: 3px; }
+  .slider-val { font-size: 0.72rem; color: var(--muted); width: 34px; text-align: right; }
+
+  .cell-grid-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+  .cell-picker {
+    aspect-ratio: 1; border-radius: 8px; border: 2px solid var(--border);
+    background: var(--bg); cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color 0.2s; font-size: 0.65rem; color: var(--muted);
+    display: flex; align-items: center; justify-content: center;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .cell-picker:hover { border-color: var(--accent); }
+  .cell-picker.selected { border-color: var(--accent); }
+  .cell-picker.has-photo { border-color: #c08080; }
+  .cell-picker img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.7; }
+  .cell-picker span { position: relative; z-index: 1; }
+
+  .picker-upload {
+    border: 2px dashed var(--border); border-radius: 10px;
+    padding: 12px; text-align: center; cursor: pointer;
+    font-size: 0.78rem; color: var(--muted); position: relative; transition: border-color 0.2s;
+  }
+  .picker-upload:hover { border-color: var(--accent); }
+  .picker-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .adj-hint { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: 10px; line-height: 1.5; }
+
+  /* ══════════ HISTORIAL ══════════ */
+  .historial-header {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; max-width: 460px; margin-bottom: 18px;
+  }
+  .historial-heading {
+    font-family: 'Cormorant Garamond', serif; font-weight: 600;
+    font-size: 1.4rem; letter-spacing: 0.06em;
+  }
+  .registro-clear {
+    font-size: 0.7rem; color: var(--muted); background: none;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 5px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .registro-clear:hover { border-color: var(--accent); color: var(--accent); }
+
+  .registro-empty {
+    text-align: center; padding: 44px 24px;
+    border: 1px dashed var(--border); border-radius: 16px;
+    width: 100%; max-width: 460px;
+    font-family: 'Cormorant Garamond', serif; font-style: italic;
+    font-size: 1.15rem; color: var(--muted);
+  }
+  .registro-list { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 460px; }
+  .registro-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    animation: slideIn 0.3s ease; transition: border-color 0.2s;
+  }
+  .registro-item:hover { border-color: var(--accent); }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+
+  .registro-num { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--muted); min-width: 30px; text-align: center; }
+  .registro-imgs { display: flex; gap: 5px; flex-shrink: 0; }
+  .registro-img { width: 46px; height: 46px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border); background: var(--bg); }
+  .registro-img-placeholder {
+    width: 46px; height: 46px; border-radius: 10px;
+    border: 1px dashed var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; color: var(--muted); background: var(--bg);
+  }
+  .registro-info { flex: 1; min-width: 0; }
+  .registro-winner { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em; }
+  .registro-winner.x   { color: var(--accent); }
+  .registro-winner.o   { color: var(--accent2); }
+  .registro-winner.emp { color: var(--muted); }
+  .registro-date { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+
+  .registro-board-mini { display: grid; grid-template-columns: repeat(3, 18px); grid-template-rows: repeat(3, 18px); gap: 2px; flex-shrink: 0; }
+  .mini-cell {
+    width: 18px; height: 18px; border-radius: 3px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.58rem; font-weight: bold;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  .mini-cell.x   { color: var(--accent); background: rgba(139,0,0,0.12); }
+  .mini-cell.o   { color: var(--accent2); background: rgba(176,58,46,0.12); }
+  .mini-cell.win-cell { background: rgba(139,0,0,0.3); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(44,13,13,0.65); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 28px; width: min(92vw, 380px);
+  }
+  body.dark .modal { background: #2c1010; border-color: #4a1a1a; }
+  .modal h2 { font-family: 'Cormorant Garamond', serif; font-weight: 600; letter-spacing: 0.08em; font-size: 1.3rem; margin-bottom: 18px; }
+  .modal-preview {
+    width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+    background: var(--bg); position: relative; margin-bottom: 18px; cursor: grab;
+  }
+  .modal-preview img { position: absolute; transform-origin: 0 0; pointer-events: none; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 4px; }
+
+  @media (max-width: 580px) {
+    :root { --cell-size: 108px; }
+    .cell { font-size: 3rem; }
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-btn" onclick="toggleTheme()">🌙</button>
+
+<!-- ══════════ INICIO ══════════ -->
+<div class="screen active" id="screen-home">
+  <div class="home-title-wrap">
+    <div class="title-wrap">
+      <span class="title-top">Heiwot's</span>
+      <h1>Triple</h1>
+      <span class="title-t">T</span>
+    </div>
+    <div class="title-rule"><span>Photo Edition</span></div>
+  </div>
+
+  <nav class="menu-list">
+    <div class="menu-item" onclick="goTo('screen-game')">
+      <div class="menu-icon">♟</div>
+      <div class="menu-text-wrap">
+        <span class="menu-label">Jugar</span>
+        <span class="menu-sub">Iniciar una nueva partida</span>
+      </div>
+    </div>
+    <div class="menu-item" onclick="goTo('screen-photos')">
+      <div class="menu-icon">🖼</div>
+      <div class="menu-text-wrap">
+        <span class="menu-label">Fotos del tablero</span>
+        <span class="menu-sub">Elegir y ajustar imágenes</span>
+      </div>
+    </div>
+    <div class="menu-item" onclick="goTo('screen-historial')">
+      <div class="menu-icon">🏆</div>
+      <div class="menu-text-wrap">
+        <span class="menu-label">Historial</span>
+        <span class="menu-sub">Ver registro de partidas</span>
+      </div>
+    </div>
+  </nav>
+
+  <p class="home-footer">— Photo Edition —</p>
+</div>
+
+<!-- ══════════ JUEGO ══════════ -->
+<div class="screen" id="screen-game">
+  <button class="back-btn" onclick="goTo('screen-home')">← Inicio</button>
+
+  <div class="game-title-wrap">
+    <div class="title-wrap">
+      <span class="title-top">Heiwot's</span>
+      <h1>Triple</h1>
+      <span class="title-t">T</span>
+    </div>
+  </div>
+
+  <div class="scores">
+    <div class="score-box active-x" id="box-x">
+      <div class="score-label">Jugador X</div>
+      <div class="score-num" id="score-x">0</div>
+    </div>
+    <div class="score-box" id="box-e">
+      <div class="score-label">Empates</div>
+      <div class="score-num" id="score-e">0</div>
+    </div>
+    <div class="score-box" id="box-o">
+      <div class="score-label">Jugador O</div>
+      <div class="score-num" id="score-o">0</div>
+    </div>
+  </div>
+
+  <div id="status">Turno de X</div>
+
+  <div class="board-wrap">
+    <div id="bg-photo"></div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn primary" onclick="reiniciar()">🔄 Nueva partida</button>
+    <button class="btn" onclick="goTo('screen-photos')">🖼 Fotos</button>
+    <button class="btn" onclick="goTo('screen-historial')">🏆 Historial</button>
+  </div>
+</div>
+
+<!-- ══════════ FOTOS ══════════ -->
+<div class="screen" id="screen-photos">
+  <button class="back-btn" onclick="goTo('screen-home')">← Inicio</button>
+
+  <div style="margin-bottom:28px; margin-top:14px; text-align:center;">
+    <span class="title-top" style="font-size:0.9rem; display:block;">Personalizar</span>
+    <h1 style="font-size:clamp(2rem,7vw,3.4rem);">Tablero</h1>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">🖼 Modo de imagen</div>
+    <div class="tabs">
+      <button class="tab active" id="tab-full" onclick="switchTab('full')">Fondo completo</button>
+      <button class="tab" id="tab-cells" onclick="switchTab('cells')">Por celda</button>
+    </div>
+
+    <div id="pane-full">
+      <div class="upload-zone" id="drop-bg">
+        <input type="file" accept="image/*" onchange="loadBgPhoto(this.files[0])">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">Arrastra o haz clic para subir una foto de fondo</div>
+      </div>
+      <div id="bg-controls" style="display:none; margin-top:16px;">
+        <div class="slider-row">
+          <label>Escala</label>
+          <input type="range" min="100" max="250" value="100" id="sl-scale" oninput="updateBg()">
+          <span class="slider-val" id="sv-scale">100%</span>
+        </div>
+        <div class="slider-row">
+          <label>Pos X</label>
+          <input type="range" min="0" max="100" value="50" id="sl-x" oninput="updateBg()">
+          <span class="slider-val" id="sv-x">50%</span>
+        </div>
+        <div class="slider-row">
+          <label>Pos Y</label>
+          <input type="range" min="0" max="100" value="50" id="sl-y" oninput="updateBg()">
+          <span class="slider-val" id="sv-y">50%</span>
+        </div>
+        <div class="slider-row">
+          <label>Brillo</label>
+          <input type="range" min="20" max="100" value="100" id="sl-bright" oninput="updateBg()">
+          <span class="slider-val" id="sv-bright">100%</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="pane-cells" style="display:none;">
+      <div class="cell-grid-picker" id="cell-picker-grid"></div>
+      <div class="picker-upload" id="cell-upload-zone" style="display:none;">
+        <input type="file" accept="image/*" id="cell-file-input" onchange="loadCellPhoto(this.files[0])">
+        📂 Subir foto para esta celda
+      </div>
+      <p class="adj-hint">Selecciona una celda · Sube su foto · Haz clic en la miniatura para ajustarla</p>
+    </div>
+  </div>
+
+  <div class="btn-row" style="max-width:460px;">
+    <button class="btn primary" onclick="goTo('screen-game')">♟ Ir a jugar</button>
+    <button class="btn" onclick="clearPhotos()">🗑 Borrar fotos</button>
+  </div>
+</div>
+
+<!-- ══════════ HISTORIAL ══════════ -->
+<div class="screen" id="screen-historial">
+  <button class="back-btn" onclick="goTo('screen-home')">← Inicio</button>
+
+  <div style="margin-bottom:28px; margin-top:14px; text-align:center;">
+    <span class="title-top" style="font-size:0.9rem; display:block;">Registro de</span>
+    <h1 style="font-size:clamp(2rem,7vw,3.4rem);">Partidas</h1>
+  </div>
+
+  <div class="historial-header">
+    <div class="historial-heading">Historial completo</div>
+    <button class="registro-clear" onclick="clearRegistro()">Borrar todo</button>
+  </div>
+
+  <div id="registro-empty" class="registro-empty">Aún no hay partidas jugadas.<br>¡Empieza a jugar!</div>
+  <div id="registro-list" class="registro-list" style="display:none;"></div>
+</div>
+
+<!-- ── MODAL AJUSTE ── -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>Ajustar foto · Celda <span id="modal-cell-num"></span></h2>
+    <div class="modal-preview" id="modal-preview">
+      <img id="modal-img" src="" draggable="false">
+    </div>
+    <div class="slider-row">
+      <label>Escala</label>
+      <input type="range" min="50" max="300" value="100" id="modal-scale" oninput="updateModalPreview()">
+      <span class="slider-val" id="msv-scale">100%</span>
+    </div>
+    <div class="slider-row">
+      <label>Pos X</label>
+      <input type="range" min="-100" max="100" value="0" id="modal-ox" oninput="updateModalPreview()">
+      <span class="slider-val" id="msv-ox">0</span>
+    </div>
+    <div class="slider-row">
+      <label>Pos Y</label>
+      <input type="range" min="-100" max="100" value="0" id="modal-oy" oninput="updateModalPreview()">
+      <span class="slider-val" id="msv-oy">0</span>
+    </div>
+    <div class="modal-btns">
+      <button class="btn primary" onclick="saveModal()">✓ Guardar</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── NAVIGATION ──
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'screen-historial') renderRegistro();
+  if (id === 'screen-photos') updatePickerGrid();
+}
+
+// ── THEME ──
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  document.getElementById('theme-btn').textContent = dark ? '☀️' : '🌙';
+}
+
+// ── STATE ──
+let board = Array(9).fill('');
+let current = 'X';
+let gameOver = false;
+let scores = { X: 0, O: 0, empate: 0 };
+let cellTab = 'full';
+let selectedCell = null;
+let registro = [];
+let partidaNum = 0;
+let bgData = null;
+let cellPhotos = Array(9).fill(null);
+let cellAdj = Array(9).fill(null);
+
+const WINS = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+// ── RENDER ──
+function render() {
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  board.forEach((val, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (val ? ' taken ' + val.toLowerCase() : '');
+
+    const photo = document.createElement('div');
+    photo.className = 'cell-photo' + (cellPhotos[i] ? ' vis' : '');
+    if (cellPhotos[i]) {
+      const adj = cellAdj[i] || { scale: 100, ox: 0, oy: 0 };
+      photo.style.backgroundImage = `url(${cellPhotos[i]})`;
+      photo.style.backgroundSize = `${adj.scale}%`;
+      photo.style.backgroundPosition = `calc(50% + ${adj.ox}px) calc(50% + ${adj.oy}px)`;
+      photo.style.opacity = '1';
+    }
+    cell.appendChild(photo);
+
+    const sym = document.createElement('div');
+    sym.className = 'cell-symbol';
+    sym.textContent = val === 'X' ? '✕' : val === 'O' ? '○' : '';
+    cell.appendChild(sym);
+
+    cell.addEventListener('click', () => play(i));
+    el.appendChild(cell);
+  });
+}
+
+// ── GAME ──
+function play(i) {
+  if (gameOver || board[i]) return;
+  board[i] = current;
+  render();
+  const w = checkWin();
+  if (w) {
+    highlight(w);
+    setStatus(`¡${current} gana! 🎉`);
+    scores[current]++;
+    document.getElementById(`score-${current.toLowerCase()}`).textContent = scores[current];
+    gameOver = true;
+    addRegistro(current, w, [...board]);
+  } else if (board.every(c => c)) {
+    setStatus('¡Empate! 🤝');
+    scores.empate++;
+    document.getElementById('score-e').textContent = scores.empate;
+    gameOver = true;
+    addRegistro('empate', [], [...board]);
+  } else {
+    current = current === 'X' ? 'O' : 'X';
+    setStatus(`Turno de ${current}`);
+    setActiveScore(current);
+  }
+}
+
+function checkWin() {
+  for (const [a,b,c] of WINS)
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) return [a,b,c];
+  return null;
+}
+
+function highlight(cells) {
+  document.querySelectorAll('.cell').forEach((el, i) => {
+    if (cells.includes(i)) el.classList.add('win');
+  });
+}
+
+function setStatus(msg) { document.getElementById('status').textContent = msg; }
+
+function setActiveScore(p) {
+  document.getElementById('box-x').className = 'score-box' + (p === 'X' ? ' active-x' : '');
+  document.getElementById('box-o').className = 'score-box' + (p === 'O' ? ' active-o' : '');
+}
+
+function reiniciar() {
+  board = Array(9).fill('');
+  current = 'X'; gameOver = false;
+  setStatus('Turno de X');
+  setActiveScore('X');
+  render();
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  cellTab = tab;
+  document.getElementById('tab-full').classList.toggle('active', tab === 'full');
+  document.getElementById('tab-cells').classList.toggle('active', tab === 'cells');
+  document.getElementById('pane-full').style.display = tab === 'full' ? '' : 'none';
+  document.getElementById('pane-cells').style.display = tab === 'cells' ? '' : 'none';
+  if (tab === 'cells') { selectedCell = null; updatePickerGrid(); }
+}
+
+// ── BG PHOTO ──
+function loadBgPhoto(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { bgData = e.target.result; updateBg(); document.getElementById('bg-controls').style.display = ''; };
+  reader.readAsDataURL(file);
+}
+
+function updateBg() {
+  const scale = document.getElementById('sl-scale').value;
+  const px    = document.getElementById('sl-x').value;
+  const py    = document.getElementById('sl-y').value;
+  const br    = document.getElementById('sl-bright').value;
+  document.getElementById('sv-scale').textContent  = scale + '%';
+  document.getElementById('sv-x').textContent      = px + '%';
+  document.getElementById('sv-y').textContent      = py + '%';
+  document.getElementById('sv-bright').textContent = br + '%';
+  const bgEl = document.getElementById('bg-photo');
+  if (!bgData) return;
+  bgEl.style.backgroundImage    = `url(${bgData})`;
+  bgEl.style.backgroundSize     = `${scale}%`;
+  bgEl.style.backgroundPosition = `${px}% ${py}%`;
+  bgEl.style.filter             = `brightness(${br/100})`;
+  bgEl.classList.add('visible');
+}
+
+// ── CELL PICKER ──
+function updatePickerGrid() {
+  const grid = document.getElementById('cell-picker-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const cp = document.createElement('div');
+    cp.className = 'cell-picker' + (cellPhotos[i] ? ' has-photo' : '') + (selectedCell === i ? ' selected' : '');
+    if (cellPhotos[i]) { const img = document.createElement('img'); img.src = cellPhotos[i]; cp.appendChild(img); }
+    const lbl = document.createElement('span');
+    lbl.textContent = cellPhotos[i] ? `C${i+1} ✓` : `C${i+1}`;
+    cp.appendChild(lbl);
+    cp.addEventListener('click', () => {
+      selectedCell = i; updatePickerGrid();
+      document.getElementById('cell-upload-zone').style.display = '';
+      if (cellPhotos[i]) openModal(i);
+    });
+    grid.appendChild(cp);
+  }
+}
+
+function loadCellPhoto(file) {
+  if (!file || selectedCell === null) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    cellPhotos[selectedCell] = e.target.result;
+    cellAdj[selectedCell] = { scale: 120, ox: 0, oy: 0 };
+    render(); openModal(selectedCell);
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('cell-file-input').value = '';
+}
+
+// ── MODAL ──
+let modalTarget = null;
+function openModal(i) {
+  if (!cellPhotos[i]) return;
+  modalTarget = i;
+  const adj = cellAdj[i] || { scale: 100, ox: 0, oy: 0 };
+  document.getElementById('modal-cell-num').textContent = i + 1;
+  document.getElementById('modal-img').src = cellPhotos[i];
+  document.getElementById('modal-scale').value = adj.scale;
+  document.getElementById('modal-ox').value    = adj.ox;
+  document.getElementById('modal-oy').value    = adj.oy;
+  updateModalPreview();
+  document.getElementById('modal').classList.add('open');
+}
+
+function updateModalPreview() {
+  const scale = +document.getElementById('modal-scale').value;
+  const ox    = +document.getElementById('modal-ox').value;
+  const oy    = +document.getElementById('modal-oy').value;
+  document.getElementById('msv-scale').textContent = scale + '%';
+  document.getElementById('msv-ox').textContent    = ox;
+  document.getElementById('msv-oy').textContent    = oy;
+  const preview = document.getElementById('modal-preview');
+  const img     = document.getElementById('modal-img');
+  const size = preview.offsetWidth * (scale / 100);
+  img.style.width  = size + 'px'; img.style.height = size + 'px'; img.style.objectFit = 'cover';
+  img.style.top  = `calc(50% - ${size/2}px + ${oy}px)`;
+  img.style.left = `calc(50% - ${size/2}px + ${ox}px)`;
+}
+
+function saveModal() {
+  if (modalTarget === null) return;
+  cellAdj[modalTarget] = {
+    scale: +document.getElementById('modal-scale').value,
+    ox:    +document.getElementById('modal-ox').value,
+    oy:    +document.getElementById('modal-oy').value,
+  };
+  closeModal(); updatePickerGrid(); render();
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); modalTarget = null; }
+
+// ── CLEAR FOTOS ──
+function clearPhotos() {
+  bgData = null; cellPhotos = Array(9).fill(null); cellAdj = Array(9).fill(null);
+  const bgEl = document.getElementById('bg-photo');
+  bgEl.style.backgroundImage = ''; bgEl.classList.remove('visible');
+  document.getElementById('bg-controls').style.display = 'none';
+  ['sl-scale','sl-x','sl-y','sl-bright'].forEach(id => document.getElementById(id).value = id === 'sl-scale' ? 100 : id === 'sl-bright' ? 100 : 50);
+  updatePickerGrid(); render();
+}
+
+// ── DRAG DROP ──
+const dropBg = document.getElementById('drop-bg');
+dropBg.addEventListener('dragover', e => { e.preventDefault(); dropBg.classList.add('drag-active'); });
+dropBg.addEventListener('dragleave', () => dropBg.classList.remove('drag-active'));
+dropBg.addEventListener('drop', e => {
+  e.preventDefault(); dropBg.classList.remove('drag-active');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadBgPhoto(f);
+});
+document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
+
+// ── REGISTRO ──
+function addRegistro(winner, winCells, boardSnap) {
+  partidaNum++;
+  const now = new Date();
+  const hora  = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const fecha = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+  const fotos = bgData
+    ? [{ type: 'bg', src: bgData }]
+    : cellPhotos.filter(Boolean).map((src, i) => ({ type: 'cell', idx: i, src }));
+  registro.unshift({ num: partidaNum, winner, winCells, boardSnap, fotos, hora, fecha });
+}
+
+function renderRegistro() {
+  const list  = document.getElementById('registro-list');
+  const empty = document.getElementById('registro-empty');
+  if (!registro.length) { list.style.display = 'none'; empty.style.display = ''; return; }
+  list.style.display = ''; empty.style.display = 'none';
+  list.innerHTML = '';
+
+  registro.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'registro-item';
+
+    const num = document.createElement('div');
+    num.className = 'registro-num';
+    num.textContent = `#${r.num}`;
+    item.appendChild(num);
+
+    const imgs = document.createElement('div');
+    imgs.className = 'registro-imgs';
+    if (!r.fotos.length) {
+      const ph = document.createElement('div');
+      ph.className = 'registro-img-placeholder'; ph.textContent = '🎮';
+      imgs.appendChild(ph);
+    } else {
+      r.fotos.slice(0, 3).forEach(f => {
+        const img = document.createElement('img');
+        img.className = 'registro-img'; img.src = f.src;
+        img.title = f.type === 'bg' ? 'Fondo' : `Celda ${f.idx + 1}`;
+        imgs.appendChild(img);
+      });
+      if (r.fotos.length > 3) {
+        const more = document.createElement('div');
+        more.className = 'registro-img-placeholder';
+        more.textContent = `+${r.fotos.length - 3}`;
+        imgs.appendChild(more);
+      }
+    }
+    item.appendChild(imgs);
+
+    const info = document.createElement('div');
+    info.className = 'registro-info';
+    const wdiv = document.createElement('div');
+    wdiv.className = 'registro-winner ' + (r.winner === 'empate' ? 'emp' : r.winner.toLowerCase());
+    wdiv.textContent = r.winner === 'empate' ? '🤝 Empate' : `${r.winner === 'X' ? '✕' : '○'}  Gana ${r.winner}`;
+    const fdiv = document.createElement('div');
+    fdiv.className = 'registro-date';
+    fdiv.textContent = `${r.fecha} · ${r.hora}`;
+    info.appendChild(wdiv); info.appendChild(fdiv);
+    item.appendChild(info);
+
+    const mini = document.createElement('div');
+    mini.className = 'registro-board-mini';
+    r.boardSnap.forEach((val, i) => {
+      const mc = document.createElement('div');
+      mc.className = 'mini-cell' + (val ? ' ' + val.toLowerCase() : '') + (r.winCells.includes(i) ? ' win-cell' : '');
+      mc.textContent = val === 'X' ? '✕' : val === 'O' ? '○' : '';
+      mini.appendChild(mc);
+    });
+    item.appendChild(mini);
+    list.appendChild(item);
+  });
+}
+
+function clearRegistro() { registro = []; partidaNum = 0; renderRegistro(); }
+
+// ── INIT ──
+render();
+</script>
+</body>
+</html>
